@@ -1,0 +1,138 @@
+Home.aspx.cs
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Web.Security;
+
+namespace WebApplication2
+{
+    public partial class Home : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            // Check if the user is authenticated
+            if (!Request.IsAuthenticated)
+            {
+                // If not authenticated, redirect to the login page
+                Response.Redirect("~/Default.aspx");
+            }
+        }
+
+        protected void LogoutButton_Click(object sender, EventArgs e)
+        {
+            // Sign out the user and redirect to the login page
+            FormsAuthentication.SignOut();
+            Response.Redirect("~/Default.aspx");
+        }
+    }
+}
+------------------------------
+Home.aspx
+
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Home.aspx.cs" Inherits="WebApplication2.Home" %>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h2>Welcome to the Home Page</h2>
+    <p>Only authenticated users can see this page.</p>
+
+ 
+    <form id="form1" runat="server">
+        <!-- Logout button inside the form -->
+        <asp:Button ID="LogoutButton" runat="server" Text="Logout" OnClick="LogoutButton_Click" />
+    </form>
+
+</body>
+</html>
+------------------------------------------------
+Web.config
+
+<?xml version="1.0"?>
+<configuration>
+  <system.web>
+    <!-- Configure Forms Authentication -->
+    <authentication mode="Forms">
+      <forms loginUrl="Default.aspx" defaultUrl="Home.aspx" timeout="30"/>
+    </authentication>
+    <authorization>
+      <allow users="*"/>
+      <!-- Allow all users to access the login page -->
+    </authorization>
+    <compilation debug="true"/>
+  </system.web>
+</configuration>
+
+-------------------------------------------
+Default.aspx.cs
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Web.Security;
+
+namespace WebApplication2
+{
+    public partial class Default : System.Web.UI.Page
+    {
+        private const string validUsername = "admin";
+        private const string validPassword = "password123";
+
+        protected void LoginButton_Click(object sender, EventArgs e)
+        {
+            string username = UsernameTextBox.Text;
+            string password = PasswordTextBox.Text;
+
+            // Simple hardcoded check
+            if (username == validUsername && password == validPassword)
+            {
+                // Forms Authentication: Set the authentication cookie
+                FormsAuthentication.SetAuthCookie(username, false);
+
+                // Redirect to Home page on successful login
+                Response.Redirect("~/Home.aspx");
+            }
+            else
+            {
+                // If login fails, show error
+                ErrorLabel.Text = "Invalid username or password.";
+            }
+        }
+    }
+}
+
+--------------------------------------------
+Default.aspx
+
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="WebApplication2.Default" %>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+    <h2>Login Page</h2>
+    <form id="form1" runat="server">
+        <asp:Label ID="UsernameLabel" runat="server" Text="Username: " />
+        <asp:TextBox ID="UsernameTextBox" runat="server" />
+        <br />
+        <asp:Label ID="PasswordLabel" runat="server" Text="Password: " />
+        <asp:TextBox ID="PasswordTextBox" runat="server" TextMode="Password" />
+        <br />
+        <asp:Button ID="LoginButton" runat="server" Text="Login" OnClick="LoginButton_Click" />
+        <asp:Label ID="ErrorLabel" runat="server" ForeColor="Red" />
+    </form>
+</body>
+</html>
+

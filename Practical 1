@@ -1,0 +1,172 @@
+Default.aspx.cs
+
+using System;
+using System.Collections.Generic;
+
+namespace WebApplication2
+{
+    public partial class _Default : System.Web.UI.Page
+    {
+        private List<product> Products
+        {
+            get
+            {
+                if (ViewState["Products"] == null)
+                    ViewState["Products"] = new List<product>();
+                return (List<product>)ViewState["Products"];
+            }
+            set
+            {
+                ViewState["Products"] = value;
+            }
+        }
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                Products = new List<product>();
+                BindGrid();
+            }
+        }
+
+        private void BindGrid()
+        {
+            GridView1.DataSource = Products;
+            GridView1.DataBind();
+        }
+
+        protected void btnAdd_Click(object sender, EventArgs e)
+        {
+            List<product> list = Products;
+
+            int nextId = list.Count + 1;
+
+            decimal price = 0;
+            if (!decimal.TryParse(txtPrice.Text, out price))
+            {
+                return;
+            }
+
+            list.Add(new product
+            {
+                Id = nextId,
+                Name = txtName.Text,
+                Price = price
+            });
+
+            Products = list;
+            BindGrid();
+
+            txtName.Text = "";
+            txtPrice.Text = "";
+        }
+
+        protected void GridView1_RowEditing(object sender, System.Web.UI.WebControls.GridViewEditEventArgs e)
+        {
+            GridView1.EditIndex = e.NewEditIndex;
+            BindGrid();
+        }
+
+        protected void GridView1_RowCancelingEdit(object sender, System.Web.UI.WebControls.GridViewCancelEditEventArgs e)
+        {
+            GridView1.EditIndex = -1;
+            BindGrid();
+        }
+
+        protected void GridView1_RowUpdating(object sender, System.Web.UI.WebControls.GridViewUpdateEventArgs e)
+        {
+            int index = e.RowIndex;
+            int id = Convert.ToInt32(GridView1.DataKeys[index].Value);
+
+            string name = ((System.Web.UI.WebControls.TextBox)GridView1.Rows[index].Cells[1].Controls[0]).Text;
+            decimal price = 0;
+
+            if (!decimal.TryParse(((System.Web.UI.WebControls.TextBox)GridView1.Rows[index].Cells[2].Controls[0]).Text, out price))
+            {
+                return;
+            }
+
+            List<product> list = Products;
+            product p = list.Find(prod => prod.Id == id);
+            if (p != null)
+            {
+                p.Name = name;
+                p.Price = price;
+            }
+
+            Products = list;
+            GridView1.EditIndex = -1;
+            BindGrid();
+        }
+
+        protected void GridView1_RowDeleting(object sender, System.Web.UI.WebControls.GridViewDeleteEventArgs e)
+        {
+            int index = e.RowIndex;
+            int id = Convert.ToInt32(GridView1.DataKeys[index].Value);
+
+            List<product> list = Products;
+            product p = list.Find(prod => prod.Id == id);
+            if (p != null)
+                list.Remove(p);
+
+            Products = list;
+            BindGrid();
+        }
+    }
+}
+-----------------------------------------------------------------
+
+Default.aspx
+
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="WebApplication2._Default" %>
+
+
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Product CRUD</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <h2>Product List</h2>
+       
+        <asp:GridView ID="GridView1" runat="server" AutoGenerateColumns="False"
+            DataKeyNames="Id"
+            OnRowEditing="GridView1_RowEditing"
+            OnRowCancelingEdit="GridView1_RowCancelingEdit"
+            OnRowUpdating="GridView1_RowUpdating"
+            OnRowDeleting="GridView1_RowDeleting">
+            <Columns>
+                <asp:BoundField DataField="Id" HeaderText="ID" ReadOnly="true" />
+                <asp:BoundField DataField="Name" HeaderText="Name" />
+                <asp:BoundField DataField="Price" HeaderText="Price" />
+                <asp:CommandField ShowEditButton="True" ShowDeleteButton="True" />
+            </Columns>
+        </asp:GridView>
+
+        <h3>Add Product</h3>
+        Name: <asp:TextBox ID="txtName" runat="server" />
+        Price: <asp:TextBox ID="txtPrice" runat="server" />
+        <asp:Button ID="btnAdd" runat="server" Text="Add" OnClick="btnAdd_Click" />
+    </form>
+</body>
+</html>
+----------------------------------------------------------------
+(class file)
+product.cs
+
+using System;
+
+namespace WebApplication2
+{
+    [Serializable]
+    public class product
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+    }
+}
+
+---------------------------------------------

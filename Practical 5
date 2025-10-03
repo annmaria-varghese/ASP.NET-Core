@@ -1,0 +1,190 @@
+webconfig
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  For more information on how to configure your ASP.NET application, please visit
+  http://go.microsoft.com/fwlink/?LinkId=169433
+-->
+<configuration>
+  <connectionStrings>
+    <add name="IceCreamDB" connectionString="Data Source=LAB202;Initial Catalog=IceCreamDB;Integrated Security=True" providerName="System.Data.SqlClient" />
+  </connectionStrings>
+
+  <system.web>
+    <compilation debug="true" targetFramework="4.0" />
+  </system.web>
+</configuration>
+
+aspx.cs 
+using System;
+using System.Web.UI.WebControls;
+using System.Data;
+using System.Data.SqlClient;
+using System.Configuration;
+
+namespace IceCreamParlour
+{
+    public partial class Default : System.Web.UI.Page
+    {
+        string conStr = ConfigurationManager.ConnectionStrings["IceCreamDB"].ConnectionString;
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+                LoadOrders();
+        }
+
+        private void LoadOrders()
+        {
+            using (SqlConnection con = new SqlConnection(conStr))
+            {
+                SqlDataAdapter da = new SqlDataAdapter("SELECT * FROM Orders", con);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+                GridView1.DataSource = dt;
+                GridView1.DataBind();
+            }
+        }
+
+        protected void btnAdd_Click(object sender, EventArgs e)
+        {
+            using (SqlConnection con = new SqlConnection(conStr))
+            {
+                string query = "INSERT INTO Orders (CustomerName, Flavor, Quantity) VALUES (@Customer, @Flavor, @Quantity)";
+                SqlCommand cmd = new SqlCommand(query, con);
+                cmd.Parameters.AddWithValue("@Customer", txtCustomer.Text);
+                cmd.Parameters.AddWithValue("@Flavor", txtFlavor.Text);
+                cmd.Parameters.AddWithValue("@Quantity", int.Parse(txtQuantity.Text));
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+            ClearForm();
+            LoadOrders();
+        }
+
+        protected void GridView1_RowCommand(object sender, System.Web.UI.WebControls.GridViewCommandEventArgs e)
+        {
+            int index = Convert.ToInt32(e.CommandArgument);
+            GridViewRow row = GridView1.Rows[index];
+            int orderId = Convert.ToInt32(row.Cells[0].Text);
+
+            if (e.CommandName == "EditOrder")
+            {
+                hdnOrderID.Value = orderId.ToString();
+                txtCustomer.Text = row.Cells[1].Text;
+                txtFlavor.Text = row.Cells[2].Text;
+                txtQuantity.Text = row.Cells[3].Text;
+
+                btnAdd.Visible = false;
+                btnUpdate.Visible = true;
+                btnCancel.Visible = true;
+            }
+            else if (e.CommandName == "DeleteOrder")
+            {
+                using (SqlConnection con = new SqlConnection(conStr))
+                {
+                    SqlCommand cmd = new SqlCommand("DELETE FROM Orders WHERE OrderID = @OrderID", con);
+                    cmd.Parameters.AddWithValue("@OrderID", orderId);
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                    con.Close();
+                }
+                LoadOrders();
+            }
+        }
+
+        protected void btnUpdate_Click(object sender, EventArgs e)
+        {
+            using (SqlConnection con = new SqlConnection(conStr))
+            {
+                string query = "UPDATE Orders SET CustomerName=@Customer, Flavor=@Flavor, Quantity=@Quantity WHERE OrderID=@OrderID";
+                SqlCommand cmd = new SqlCommand(query, con);
+                cmd.Parameters.AddWithValue("@Customer", txtCustomer.Text);
+                cmd.Parameters.AddWithValue("@Flavor", txtFlavor.Text);
+                cmd.Parameters.AddWithValue("@Quantity", int.Parse(txtQuantity.Text));
+                cmd.Parameters.AddWithValue("@OrderID", int.Parse(hdnOrderID.Value));
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+            ClearForm();
+            LoadOrders();
+
+            btnAdd.Visible = true;
+            btnUpdate.Visible = false;
+            btnCancel.Visible = false;
+        }
+
+        protected void btnCancel_Click(object sender, EventArgs e)
+        {
+            ClearForm();
+
+            btnAdd.Visible = true;
+            btnUpdate.Visible = false;
+            btnCancel.Visible = false;
+        }
+
+        private void ClearForm()
+        {
+            txtCustomer.Text = "";
+            txtFlavor.Text = "";
+            txtQuantity.Text = "";
+            hdnOrderID.Value = "";
+        }
+    }
+}
+
+aspx
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="IceCreamParlour.Default" %>
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title>Ice Cream Parlour - Order Management</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: inline-block; width: 120px; }
+        input[type=text], input[type=number] { width: 200px; padding: 5px; }
+        button { padding: 5px 15px; margin-right: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+    </style>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <h2>Ice Cream Order Management</h2>
+        <div class="form-group">
+            <label for="txtCustomer">Customer Name:</label>
+            <asp:TextBox ID="txtCustomer" runat="server"></asp:TextBox>
+        </div>
+        <div class="form-group">
+            <label for="txtFlavor">Flavor:</label>
+            <asp:TextBox ID="txtFlavor" runat="server"></asp:TextBox>
+        </div>
+        <div class="form-group">
+            <label for="txtQuantity">Quantity:</label>
+            <asp:TextBox ID="txtQuantity" runat="server"></asp:TextBox>
+        </div>
+        <asp:HiddenField ID="hdnOrderID" runat="server" />
+        <div class="form-group">
+            <asp:Button ID="btnAdd" runat="server" Text="Add Order" OnClick="btnAdd_Click" />
+            <asp:Button ID="btnUpdate" runat="server" Text="Update Order" OnClick="btnUpdate_Click" Visible="false" />
+            <asp:Button ID="btnCancel" runat="server" Text="Cancel" OnClick="btnCancel_Click" Visible="false" />
+        </div>
+        <asp:GridView ID="GridView1" runat="server" AutoGenerateColumns="False" OnRowCommand="GridView1_RowCommand">
+            <Columns>
+                <asp:BoundField DataField="OrderID" HeaderText="Order ID" />
+                <asp:BoundField DataField="CustomerName" HeaderText="Customer" />
+                <asp:BoundField DataField="Flavor" HeaderText="Flavor" />
+                <asp:BoundField DataField="Quantity" HeaderText="Quantity" />
+                <asp:BoundField DataField="OrderDate" HeaderText="Order Date" DataFormatString="{0:yyyy-MM-dd}" />
+                <asp:ButtonField ButtonType="Button" CommandName="EditOrder" Text="Edit" />
+                <asp:ButtonField ButtonType="Button" CommandName="DeleteOrder" Text="Delete" />
+            </Columns>
+        </asp:GridView>
+    </form>
+</body>
+</html>

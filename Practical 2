@@ -1,0 +1,107 @@
+Default.aspx
+
+
+
+
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="SimpleBlogWebForms._Default" %>
+
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>Simple Blog</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <h2>Blog Posts</h2>
+        <asp:Repeater ID="PostsRepeater" runat="server" OnItemCommand="PostsRepeater_ItemCommand">
+            <ItemTemplate>
+                <p>
+                    <strong><%# Eval("Title") %></strong>: <%# Eval("Content") %>
+                    <asp:LinkButton ID="EditBtn" runat="server"
+                        CommandName="Edit" CommandArgument='<%# Eval("Id") %>'>Edit</asp:LinkButton>
+                </p>
+            </ItemTemplate>
+        </asp:Repeater>
+        <br />
+        <asp:TextBox ID="TitleText" runat="server" Placeholder="Title"></asp:TextBox>
+        <br />
+        <asp:TextBox ID="ContentText" runat="server" Placeholder="Content" TextMode="MultiLine"></asp:TextBox>
+        <br />
+        <asp:Button ID="AddBtn" runat="server" Text="Add Post" OnClick="AddBtn_Click" />
+    </form>
+</body>
+</html>
+-----------------------------------------------
+
+
+Default.aspx.cs
+
+
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace SimpleBlogWebForms
+{
+    public partial class _Default : System.Web.UI.Page
+    {
+        private static List<Post> Posts = new List<Post>();
+        private static int nextId = 1;
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack) BindPosts();
+        }
+
+        private void BindPosts()
+        {
+            PostsRepeater.DataSource = Posts;
+            PostsRepeater.DataBind();
+        }
+
+        protected void AddBtn_Click(object sender, EventArgs e)
+        {
+            // If there's content, add a new post to the list
+            if (!string.IsNullOrEmpty(TitleText.Text) && !string.IsNullOrEmpty(ContentText.Text))
+            {
+                Posts.Add(new Post
+                {
+                    Id = nextId++,
+                    Title = TitleText.Text,
+                    Content = ContentText.Text
+                });
+
+                TitleText.Text = "";
+                ContentText.Text = "";
+                BindPosts();
+            }
+        }
+
+        protected void PostsRepeater_ItemCommand(object source, System.Web.UI.WebControls.RepeaterCommandEventArgs e)
+        {
+            if (e.CommandName == "Edit")
+            {
+                int id = Convert.ToInt32(e.CommandArgument);
+                var post = Posts.FirstOrDefault(p => p.Id == id);
+                if (post != null)
+                {
+                    // Populate the textboxes with the post content to edit it
+                    TitleText.Text = post.Title;
+                    ContentText.Text = post.Content;
+
+                    // Remove the post from the list so that the next Add action will update it
+                    Posts.Remove(post);
+                }
+            }
+        }
+
+        public class Post
+        {
+            public int Id { get; set; }
+            public string Title { get; set; }
+            public string Content { get; set; }
+        }
+    }
+}
